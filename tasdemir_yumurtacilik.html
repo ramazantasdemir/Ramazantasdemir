@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#173b2b">
+<title>TAŞDEMİR YUMURTACILIK</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#17231c;background:#f3f6f2}
+*{box-sizing:border-box}body{margin:0}.top{background:#173b2b;color:white;padding:24px 18px 20px}
+h1{font-size:23px;margin:0 0 5px}.sub{opacity:.8;font-size:13px}
+main{max-width:760px;margin:auto;padding:16px}.card{background:white;border-radius:16px;padding:17px;margin:0 0 14px;box-shadow:0 3px 14px #152b1a0d}
+h2{font-size:17px;margin:0 0 12px}label{display:block;font-size:13px;font-weight:600;margin:10px 0 5px}
+input,button,select{font:inherit;width:100%;padding:12px;border-radius:10px;border:1px solid #d7e0d8;background:white}
+button{background:#1c6541;color:white;border:0;font-weight:700;margin-top:12px}
+.small{font-size:12px;color:#65736a;line-height:1.5}.status{padding:10px;border-radius:10px;background:#f0f5f0;font-size:13px}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}nav button{width:auto;flex:1;margin:0;padding:10px}
+.hidden{display:none}.item{padding:10px 0;border-bottom:1px solid #edf0ed}.item:last-child{border:0}
+</style>
+</head>
+<body>
+<header class="top"><h1>TAŞDEMİR YUMURTACILIK</h1><div class="sub">Stok • Satış • Müşteri takibi</div></header>
+<main>
+<section class="card" id="login">
+<h2>Giriş</h2>
+<label>E-posta</label><input id="email" type="email" autocomplete="username" placeholder="E-posta adresiniz">
+<label>Şifre</label><input id="password" type="password" autocomplete="current-password" placeholder="Şifreniz">
+<button onclick="signIn()">Giriş yap</button>
+<p class="small">Bu ilk sürüm Supabase projenize bağlanacak şekilde hazırlanmıştır. Giriş yapabilmek için Supabase Auth içinde kullanıcı hesabı oluşturulmuş olmalıdır.</p>
+<div id="loginMsg" class="status">Bağlantı anahtarı henüz eklenmedi.</div>
+</section>
+<section id="app" class="hidden">
+<nav><button onclick="show('home')">Özet</button><button onclick="show('products')">Ürünler</button><button onclick="show('customers')">Müşteriler</button><button onclick="show('sales')">Satış</button></nav>
+<div id="home" class="card"><h2>Genel durum</h2><div id="summary" class="status">Veriler yükleniyor…</div></div>
+<div id="products" class="card hidden"><h2>Ürünler ve stok</h2><div id="productList"></div><label>Yeni ürün adı</label><input id="newProduct" placeholder="Ürün adı"><button onclick="addProduct()">Ürün ekle (yönetici)</button><label>Stok eklenecek ürün</label><select id="stockProduct"></select><label>Eklenen koli</label><input id="stockQty" type="number" min="0.01" step="0.01"><button onclick="addStock()">Stok ekle (yönetici)</button></div>
+<div id="customers" class="card hidden"><h2>Müşteriler</h2><div id="customerList"></div><label>Müşteri adı</label><input id="newCustomer" placeholder="Müşteri adı"><label>Telefon</label><input id="newPhone" placeholder="Telefon (isteğe bağlı)"><button onclick="addCustomer()">Müşteri ekle</button></div>
+<div id="sales" class="card hidden"><h2>Satış</h2><label>Müşteri (boş bırakılırsa peşin satış)</label><select id="saleCustomer"><option value="">Peşin / müşterisiz</option></select><label>Ürün</label><select id="saleProduct"></select><label>Miktar (koli)</label><input id="saleQty" type="number" min="0.01" step="0.01"><label>Birim fiyat</label><input id="salePrice" type="number" min="0" step="0.01"><label>Not</label><input id="saleNote" placeholder="İsteğe bağlı"><button onclick="makeSale()">Satışı kaydet</button></div>
+<div class="card"><button onclick="signOut()">Çıkış yap</button></div>
+</section>
+<section class="card"><h2>Kurulum bilgisi</h2><p class="small">Supabase URL ve yalnızca Publishable (yayınlanabilir) anahtar bu dosyaya eklenecektir. Secret / service_role anahtarını tarayıcıya koymayın. Bu prototip henüz canlıya yayımlanmış bir web sitesi değildir.</p></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL="https://xafuivtznegnmcbzziuv.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY="sb_publishable_Yd9Szh60uLa_Go9EbdpMgw_UbsAmpf9";
+let db=null, profile=null, products=[], customers=[];
+function msg(t){document.getElementById('loginMsg').textContent=t}
+function init(){
+
+  if(!SUPABASE_PUBLISHABLE_KEY || SUPABASE_PUBLISHABLE_KEY.startsWith('BURAYA_')){
+
+    msg('Bağlantı anahtarı henüz eklenmedi.');
+
+    return;
+
+  }
+
+  if(!window.supabase){
+
+    msg('Supabase kütüphanesi yüklenemedi.');
+
+    return;
+
+  }
+
+  db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+
+  msg('Supabase bağlantısı hazır. Giriş yapabilirsiniz.');
+ 
+ }
+
+async function signIn(){if(!db)return msg('Önce bağlantı anahtarı eklenmeli.');let {data,error}=await db.auth.signInWithPassword({email:email.value,password:password.value});if(error)return msg(error.message);await loadApp()}
+async function loadApp(){let {data:u}=await db.auth.getUser();if(!u.user)return;let {data:p,error}=await db.from('profiles').select('role,is_active,name').eq('id',u.user.id).single();if(error||!p||!p.is_active){msg('Hesabınız aktif değil veya profil bulunamadı.');return}profile=p;login.classList.add('hidden');app.classList.remove('hidden');await refresh()}
+async function refresh(){let [pr,cu]=await Promise.all([db.from('products').select('*').eq('is_active',true).order('name'),db.from('customers').select('*').eq('is_active',true).order('name')]);if(pr.error||cu.error){summary.textContent=(pr.error||cu.error).message;return}products=pr.data||[];customers=cu.data||[];productList.innerHTML=products.map(p=>`<div class="item">${esc(p.name)} — <b>${p.stock_koli} koli</b></div>`).join('')||'Henüz ürün yok.';customerList.innerHTML=customers.map(c=>`<div class="item">${esc(c.name)} — Bakiye: ${c.balance||0}</div>`).join('')||'Henüz müşteri yok.';stockProduct.innerHTML=saleProduct.innerHTML=products.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');saleCustomer.innerHTML='<option value="">Peşin / müşterisiz</option>'+customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');summary.textContent=`Aktif ürün: ${products.length} • Müşteri: ${customers.length}`}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function show(id){['home','products','customers','sales'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id))}
+async function rpc(name,args){let {data,error}=await db.rpc(name,args);if(error)alert(error.message);else{alert('İşlem tamamlandı.');await refresh()}return !error}
+async function addProduct(){if(profile.role!=='admin')return alert('Yalnızca yönetici ürün ekleyebilir.');if(newProduct.value.trim())await rpc('add_product',{p_name:newProduct.value.trim()})}
+async function addStock(){if(profile.role!=='admin')return alert('Yalnızca yönetici stok ekleyebilir.');await rpc('add_stock',{p_product_id:stockProduct.value,p_quantity:Number(stockQty.value),p_note:null})}
+async function addCustomer(){if(newCustomer.value.trim())await rpc('add_customer',{p_name:newCustomer.value.trim(),p_phone:newPhone.value||null,p_address:null})}
+async function makeSale(){let q=Number(saleQty.value),price=Number(salePrice.value);if(!saleProduct.value||q<=0||price<0)return alert('Ürün, miktar ve fiyatı kontrol edin.');await rpc('create_sale',{p_customer_id:saleCustomer.value||null,p_note:saleNote.value||null,p_items:[{product_id:saleProduct.value,quantity_koli:q,unit_price:price}]})}
+async function signOut(){await db.auth.signOut();app.classList.add('hidden');login.classList.remove('hidden')}
+alert("JAVASCRIPT ÇALIŞIYOR");
+init();
+</script>
+</body></html>
