@@ -104,27 +104,9 @@ async function resetPassword(){
 
 async function updatePassword(){
 
-  const newPass=prompt('Yeni şifrenizi girin:');
+  document.getElementById('resetBox').classList.remove('hidden');
 
-  if(!newPass || newPass.length<6){
-
-    return alert('Şifre en az 6 karakter olmalı.');
-
-  }
-
-  const {error}=await db.auth.updateUser({
-
-    password:newPass
-
-  });
-
-  if(error)return alert(error.message);
-
-  alert('Şifreniz başarıyla değiştirildi.');
-
-  await db.auth.signOut();
-
-  location.reload();
+  msg('Yeni şifrenizi yazın ve Şifreyi kaydet düğmesine basın.');
 
 }
  async function saveNewPassword(){
