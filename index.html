@@ -95,7 +95,15 @@ function init(){
   db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
 
   msg('Supabase bağlantısı hazır. Giriş yapabilirsiniz.');
- 
+ db.auth.onAuthStateChange((event, session) => {
+
+  if(event === 'PASSWORD_RECOVERY'){
+
+    updatePassword();
+
+  }
+
+});
  }
 
 async function signIn(){if(!db)return msg('Önce bağlantı anahtarı eklenmeli.');let {data,error}=await db.auth.signInWithPassword({email:email.value,password:password.value});if(error)return msg(error.message);await loadApp()}
