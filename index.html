@@ -452,7 +452,27 @@ function loadSettings(){
 
 }
 async function rpc(name,args){let {data,error}=await db.rpc(name,args);if(error)alert(error.message);else{alert('İşlem tamamlandı.');await refresh()}return !error}
-async function addProduct(){if(profile.role!=='admin')return alert('Yalnızca yönetici ürün ekleyebilir.');if(newProduct.value.trim())await rpc('add_product',{p_name:newProduct.value.trim()})}
+async function addProduct(){
+
+  if(newProduct.value.trim())
+
+    await rpc('add_product',{p_name:newProduct.value.trim()})
+
+}
+
+async function addStock(){
+
+  await rpc('add_stock',{
+
+    p_product_id:stockProduct.value,
+
+    p_quantity:Number(stockQty.value),
+
+    p_note:null
+
+  })
+
+}
 async function addStock(){if(profile.role!=='admin')return alert('Yalnızca yönetici stok ekleyebilir.');await rpc('add_stock',{p_product_id:stockProduct.value,p_quantity:Number(stockQty.value),p_note:null})}
 async function addCustomer(){if(newCustomer.value.trim())await rpc('add_customer',{p_name:newCustomer.value.trim(),p_phone:newPhone.value||null,p_address:null})}
 async function makeSale(){let q=Number(saleQty.value),price=Number(salePrice.value);if(!saleProduct.value||q<=0||price<0)return alert('Ürün, miktar ve fiyatı kontrol edin.');await rpc('create_sale',{p_customer_id:saleCustomer.value||null,p_note:saleNote.value||null,p_items:[{product_id:saleProduct.value,quantity_koli:q,unit_price:price}]})}
