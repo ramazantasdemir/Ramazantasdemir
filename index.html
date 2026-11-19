@@ -59,7 +59,82 @@ nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}nav button{width:auto;fl
 <div id="sales" class="card hidden"><h2>Satış</h2><label>Müşteri (boş bırakılırsa peşin satış)</label><select id="saleCustomer"><option value="">Peşin / müşterisiz</option></select><label>Ürün</label><select id="saleProduct"></select><label>Miktar (koli)</label><input id="saleQty" type="number" min="0.01" step="0.01"><label>Birim fiyat</label><input id="salePrice" type="number" min="0" step="0.01"><label>Not</label><input id="saleNote" placeholder="İsteğe bağlı"><button onclick="makeSale()">Satışı kaydet</button></div>
  <div class="card"><button onclick="signOut()">Çıkış yap</button></div>
 </section>
-<section class="card"><h2>Kurulum bilgisi</h2><p class="small">Supabase URL ve yalnızca Publishable (yayınlanabilir) anahtar bu dosyaya eklenecektir. Secret / service_role anahtarını tarayıcıya koymayın. Bu prototip henüz canlıya yayımlanmış bir web sitesi değildir.</p></section>
+<div id="settings" class="card hidden">
+
+<h2>⚙️ Ayarlar</h2>
+
+<label>Görünüm</label>
+
+<select id="themeSetting">
+
+<option value="auto">Otomatik</option>
+
+<option value="light">Açık tema</option>
+
+<option value="dark">Koyu tema</option>
+
+</select>
+
+<label>Tema rengi</label>
+
+<select id="colorSetting">
+
+<option value="green">Yeşil</option>
+
+<option value="blue">Mavi</option>
+
+<option value="red">Kırmızı</option>
+
+<option value="purple">Mor</option>
+
+</select>
+
+<label>Yazı boyutu</label>
+
+<select id="fontSizeSetting">
+
+<option value="small">Küçük</option>
+
+<option value="medium" selected>Normal</option>
+
+<option value="large">Büyük</option>
+
+</select>
+
+<label>Yazı karakteri</label>
+
+<select id="fontSetting">
+
+<option value="system">Varsayılan</option>
+
+<option value="Arial">Arial</option>
+
+<option value="Georgia">Georgia</option>
+
+</select>
+
+<label>Tarih biçimi</label>
+
+<select id="dateSetting">
+
+<option value="dmy">GG.AA.YYYY</option>
+
+<option value="ymd">YYYY-AA-GG</option>
+
+</select>
+
+<label>Ölçü birimi</label>
+
+<select id="unitSetting">
+
+<option value="koli">Koli</option>
+
+<option value="adet">Adet</option>
+
+</select>
+
+</div>
+ <section class="card"><h2>Kurulum bilgisi</h2><p class="small">Supabase URL ve yalnızca Publishable (yayınlanabilir) anahtar bu dosyaya eklenecektir. Secret / service_role anahtarını tarayıcıya koymayın. Bu prototip henüz canlıya yayımlanmış bir web sitesi değildir.</p></section>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -143,7 +218,15 @@ async function updatePassword(){
  async function loadApp(){let {data:u}=await db.auth.getUser();if(!u.user)return;let {data:p,error}=await db.from('profiles').select('role,is_active,full_name').eq('id',u.user.id).single();if(error||!p||!p.is_active){msg('Hesabınız aktif değil veya profil bulunamadı.');return}profile=p;login.classList.add('hidden');app.classList.remove('hidden');await refresh()}
 async function refresh(){let [pr,cu]=await Promise.all([db.from('products').select('*').eq('is_active',true).order('name'),db.from('customers').select('*').eq('is_active',true).order('name')]);if(pr.error||cu.error){summary.textContent=(pr.error||cu.error).message;return}products=pr.data||[];customers=cu.data||[];productList.innerHTML=products.map(p=>`<div class="item">${esc(p.name)} — <b>${p.stock_koli} koli</b></div>`).join('')||'Henüz ürün yok.';customerList.innerHTML=customers.map(c=>`<div class="item">${esc(c.name)} — Bakiye: ${c.balance||0}</div>`).join('')||'Henüz müşteri yok.';stockProduct.innerHTML=saleProduct.innerHTML=products.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');saleCustomer.innerHTML='<option value="">Peşin / müşterisiz</option>'+customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');summary.textContent=`Aktif ürün: ${products.length} • Müşteri: ${customers.length}`}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function show(id){['home','products','customers','sales'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id))}
+function show(id){
+
+  ['home','products','customers','sales','settings'].forEach(x=>{
+
+    document.getElementById(x).classList.toggle('hidden',x!==id);
+
+  });
+
+}
 async function rpc(name,args){let {data,error}=await db.rpc(name,args);if(error)alert(error.message);else{alert('İşlem tamamlandı.');await refresh()}return !error}
 async function addProduct(){if(profile.role!=='admin')return alert('Yalnızca yönetici ürün ekleyebilir.');if(newProduct.value.trim())await rpc('add_product',{p_name:newProduct.value.trim()})}
 async function addStock(){if(profile.role!=='admin')return alert('Yalnızca yönetici stok ekleyebilir.');await rpc('add_stock',{p_product_id:stockProduct.value,p_quantity:Number(stockQty.value),p_note:null})}
