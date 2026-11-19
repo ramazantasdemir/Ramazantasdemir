@@ -40,7 +40,19 @@ nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}nav button{width:auto;fl
 <div id="loginMsg" class="status">Bağlantı anahtarı henüz eklenmedi.</div>
 </section>
 <section id="app" class="hidden">
-<nav><button onclick="show('home')">Özet</button><button onclick="show('products')">Ürünler</button><button onclick="show('customers')">Müşteriler</button><button onclick="show('sales')">Satış</button></nav>
+<nav>
+
+<button onclick="show('home')">Özet</button>
+
+<button onclick="show('products')">Ürünler</button>
+
+<button onclick="show('customers')">Müşteriler</button>
+
+<button onclick="show('sales')">Satış</button>
+
+<button onclick="show('settings')">⚙️ Ayarlar</button>
+
+</nav>
 <div id="home" class="card"><h2>Genel durum</h2><div id="summary" class="status">Veriler yükleniyor…</div></div>
 <div id="products" class="card hidden"><h2>Ürünler ve stok</h2><div id="productList"></div><label>Yeni ürün adı</label><input id="newProduct" placeholder="Ürün adı"><button onclick="addProduct()">Ürün ekle (yönetici)</button><label>Stok eklenecek ürün</label><select id="stockProduct"></select><label>Eklenen koli</label><input id="stockQty" type="number" min="0.01" step="0.01"><button onclick="addStock()">Stok ekle (yönetici)</button></div>
 <div id="customers" class="card hidden"><h2>Müşteriler</h2><div id="customerList"></div><label>Müşteri adı</label><input id="newCustomer" placeholder="Müşteri adı"><label>Telefon</label><input id="newPhone" placeholder="Telefon (isteğe bağlı)"><button onclick="addCustomer()">Müşteri ekle</button></div>
