@@ -45,25 +45,6 @@ nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}nav button{width:auto;fl
 <div id="products" class="card hidden"><h2>Ürünler ve stok</h2><div id="productList"></div><label>Yeni ürün adı</label><input id="newProduct" placeholder="Ürün adı"><button onclick="addProduct()">Ürün ekle (yönetici)</button><label>Stok eklenecek ürün</label><select id="stockProduct"></select><label>Eklenen koli</label><input id="stockQty" type="number" min="0.01" step="0.01"><button onclick="addStock()">Stok ekle (yönetici)</button></div>
 <div id="customers" class="card hidden"><h2>Müşteriler</h2><div id="customerList"></div><label>Müşteri adı</label><input id="newCustomer" placeholder="Müşteri adı"><label>Telefon</label><input id="newPhone" placeholder="Telefon (isteğe bağlı)"><button onclick="addCustomer()">Müşteri ekle</button></div>
 <div id="sales" class="card hidden"><h2>Satış</h2><label>Müşteri (boş bırakılırsa peşin satış)</label><select id="saleCustomer"><option value="">Peşin / müşterisiz</option></select><label>Ürün</label><select id="saleProduct"></select><label>Miktar (koli)</label><input id="saleQty" type="number" min="0.01" step="0.01"><label>Birim fiyat</label><input id="salePrice" type="number" min="0" step="0.01"><label>Not</label><input id="saleNote" placeholder="İsteğe bağlı"><button onclick="makeSale()">Satışı kaydet</button></div>
-async function saveNewPassword(){
-
-  const newPass=document.getElementById('newPassword').value;
-
-  if(!newPass || newPass.length<6)
-
-    return msg('Şifre en az 6 karakter olmalı.');
-
-  const {error}=await db.auth.updateUser({password:newPass});
-
-  if(error) return msg(error.message);
-
-  msg('Şifreniz başarıyla değiştirildi. Yeni şifrenizle giriş yapabilirsiniz.');
-
-  document.getElementById('resetBox').classList.add('hidden');
-
-  await db.auth.signOut();
-
-}
  <div class="card"><button onclick="signOut()">Çıkış yap</button></div>
 </section>
 <section class="card"><h2>Kurulum bilgisi</h2><p class="small">Supabase URL ve yalnızca Publishable (yayınlanabilir) anahtar bu dosyaya eklenecektir. Secret / service_role anahtarını tarayıcıya koymayın. Bu prototip henüz canlıya yayımlanmış bir web sitesi değildir.</p></section>
@@ -144,6 +125,25 @@ async function updatePassword(){
   await db.auth.signOut();
 
   location.reload();
+
+}
+ async function saveNewPassword(){
+
+  const newPass=document.getElementById('newPassword').value;
+
+  if(!newPass || newPass.length<6)
+
+    return msg('Şifre en az 6 karakter olmalı.');
+
+  const {error}=await db.auth.updateUser({password:newPass});
+
+  if(error) return msg(error.message);
+
+  msg('Şifreniz başarıyla değiştirildi.');
+
+  document.getElementById('resetBox').classList.add('hidden');
+
+  await db.auth.signOut();
 
 }
  async function loadApp(){let {data:u}=await db.auth.getUser();if(!u.user)return;let {data:p,error}=await db.from('profiles').select('role,is_active,full_name').eq('id',u.user.id).single();if(error||!p||!p.is_active){msg('Hesabınız aktif değil veya profil bulunamadı.');return}profile=p;login.classList.add('hidden');app.classList.remove('hidden');await refresh()}
