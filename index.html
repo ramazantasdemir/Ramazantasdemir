@@ -99,7 +99,46 @@ function init(){
  }
 
 async function signIn(){if(!db)return msg('Önce bağlantı anahtarı eklenmeli.');let {data,error}=await db.auth.signInWithPassword({email:email.value,password:password.value});if(error)return msg(error.message);await loadApp()}
-async function loadApp(){let {data:u}=await db.auth.getUser();if(!u.user)return;let {data:p,error}=await db.from('profiles').select('role,is_active,name').eq('id',u.user.id).single();if(error||!p||!p.is_active){msg('Hesabınız aktif değil veya profil bulunamadı.');return}profile=p;login.classList.add('hidden');app.classList.remove('hidden');await refresh()}
+async function resetPassword(){
+
+  const {error}=await db.auth.resetPasswordForEmail(email.value,{
+
+    redirectTo:window.location.origin+window.location.pathname
+
+  });
+
+  if(error)return msg(error.message);
+
+  msg('Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.');
+
+}
+
+async function updatePassword(){
+
+  const newPass=prompt('Yeni şifrenizi girin:');
+
+  if(!newPass || newPass.length<6){
+
+    return alert('Şifre en az 6 karakter olmalı.');
+
+  }
+
+  const {error}=await db.auth.updateUser({
+
+    password:newPass
+
+  });
+
+  if(error)return alert(error.message);
+
+  alert('Şifreniz başarıyla değiştirildi.');
+
+  await db.auth.signOut();
+
+  location.reload();
+
+}
+ async function loadApp(){let {data:u}=await db.auth.getUser();if(!u.user)return;let {data:p,error}=await db.from('profiles').select('role,is_active,name').eq('id',u.user.id).single();if(error||!p||!p.is_active){msg('Hesabınız aktif değil veya profil bulunamadı.');return}profile=p;login.classList.add('hidden');app.classList.remove('hidden');await refresh()}
 async function refresh(){let [pr,cu]=await Promise.all([db.from('products').select('*').eq('is_active',true).order('name'),db.from('customers').select('*').eq('is_active',true).order('name')]);if(pr.error||cu.error){summary.textContent=(pr.error||cu.error).message;return}products=pr.data||[];customers=cu.data||[];productList.innerHTML=products.map(p=>`<div class="item">${esc(p.name)} — <b>${p.stock_koli} koli</b></div>`).join('')||'Henüz ürün yok.';customerList.innerHTML=customers.map(c=>`<div class="item">${esc(c.name)} — Bakiye: ${c.balance||0}</div>`).join('')||'Henüz müşteri yok.';stockProduct.innerHTML=saleProduct.innerHTML=products.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');saleCustomer.innerHTML='<option value="">Peşin / müşterisiz</option>'+customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');summary.textContent=`Aktif ürün: ${products.length} • Müşteri: ${customers.length}`}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function show(id){['home','products','customers','sales'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id))}
