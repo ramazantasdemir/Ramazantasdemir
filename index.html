@@ -157,7 +157,7 @@ async function addCustomer(){if(newCustomer.value.trim())await rpc('add_customer
 async function makeSale(){let q=Number(saleQty.value),price=Number(salePrice.value);if(!saleProduct.value||q<=0||price<0)return alert('Ürün, miktar ve fiyatı kontrol edin.');await rpc('create_sale',{p_customer_id:saleCustomer.value||null,p_note:saleNote.value||null,p_items:[{product_id:saleProduct.value,quantity_koli:q,unit_price:price}]})}
 async function sendResetEmail(){if(!db)return msg('Bağlantı hazır değil.');if(!email.value.trim())return msg('Önce e-posta adresinizi yazın.');let {error}=await db.auth.resetPasswordForEmail(email.value.trim(),{redirectTo:location.origin+location.pathname});msg(error?error.message:'Şifre yenileme bağlantısı e-posta adresinize gönderildi.');}
   async function signOut(){await db.auth.signOut();app.classList.add('hidden');login.classList.remove('hidden')}
-alert("JAVASCRIPT ÇALIŞIYOR");
+
 init();
 </script>
 </body></html>
