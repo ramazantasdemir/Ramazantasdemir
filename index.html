@@ -36,7 +36,8 @@ nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}nav button{width:auto;fl
 
 </div>
   <button onclick="signIn()">Giriş yap</button>
-<p class="small">Bu ilk sürüm Supabase projenize bağlanacak şekilde hazırlanmıştır. Giriş yapabilmek için Supabase Auth içinde kullanıcı hesabı oluşturulmuş olmalıdır.</p>
+<button onclick="signUp()">Yeni personel kaydı</button>
+ <p class="small">Bu ilk sürüm Supabase projenize bağlanacak şekilde hazırlanmıştır. Giriş yapabilmek için Supabase Auth içinde kullanıcı hesabı oluşturulmuş olmalıdır.</p>
 <div id="loginMsg" class="status">Bağlantı anahtarı henüz eklenmedi.</div>
 </section>
 <section id="app" class="hidden">
@@ -53,7 +54,8 @@ nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}nav button{width:auto;fl
 <button onclick="show('settings')">⚙️ Ayarlar</button>
 
 </nav>
-<div id="home" class="card"><h2>Genel durum</h2><div id="summary" class="status">Veriler yükleniyor…</div></div>
+<div id="pendingUsers" class="card hidden"></div>
+ <div id="home" class="card"><h2>Genel durum</h2><div id="summary" class="status">Veriler yükleniyor…</div></div>
 <div id="products" class="card hidden"><h2>Ürünler ve stok</h2><div id="productList"></div><label>Yeni ürün adı</label><input id="newProduct" placeholder="Ürün adı"><button onclick="addProduct()">Ürün ekle (yönetici)</button><label>Stok eklenecek ürün</label><select id="stockProduct"></select><label>Eklenen koli</label><input id="stockQty" type="number" min="0.01" step="0.01"><button onclick="addStock()">Stok ekle (yönetici)</button></div>
 <div id="customers" class="card hidden"><h2>Müşteriler</h2><div id="customerList"></div><label>Müşteri adı</label><input id="newCustomer" placeholder="Müşteri adı"><label>Telefon</label><input id="newPhone" placeholder="Telefon (isteğe bağlı)"><button onclick="addCustomer()">Müşteri ekle</button></div>
 <div id="sales" class="card hidden"><h2>Satış</h2><label>Müşteri (boş bırakılırsa peşin satış)</label><select id="saleCustomer"><option value="">Peşin / müşterisiz</option></select><label>Ürün</label><select id="saleProduct"></select><label>Miktar (koli)</label><input id="saleQty" type="number" min="0.01" step="0.01"><label>Birim fiyat</label><input id="salePrice" type="number" min="0" step="0.01"><label>Not</label><input id="saleNote" placeholder="İsteğe bağlı"><button onclick="makeSale()">Satışı kaydet</button></div>
@@ -176,7 +178,32 @@ function init(){
  }
 
 async function signIn(){if(!db)return msg('Önce bağlantı anahtarı eklenmeli.');let {data,error}=await db.auth.signInWithPassword({email:email.value,password:password.value});if(error)return msg(error.message);await loadApp()}
-async function resetPassword(){
+async function signUp(){
+
+  const name = prompt('Adınızı ve soyadınızı girin:');
+
+  if(!name || !name.trim()) return;
+
+  const {data,error} = await db.auth.signUp({
+
+    email: email.value,
+
+    password: password.value,
+
+    options: {
+
+      data: { full_name: name.trim() }
+
+    }
+
+  });
+
+  if(error) return msg(error.message);
+
+  msg('Kayıt oluşturuldu. Yönetici onayı bekleniyor.');
+
+}
+ async function resetPassword(){
 
   const {error}=await db.auth.resetPasswordForEmail(email.value,{
 
@@ -216,8 +243,101 @@ async function updatePassword(){
   await db.auth.signOut();
 
 }
- async function loadApp(){let {data:u}=await db.auth.getUser();if(!u.user)return;let {data:p,error}=await db.from('profiles').select('role,is_active,full_name').eq('id',u.user.id).single();if(error||!p||!p.is_active){msg('Hesabınız aktif değil veya profil bulunamadı.');return}profile=p;login.classList.add('hidden');app.classList.remove('hidden');await refresh()}
-async function refresh(){let [pr,cu]=await Promise.all([db.from('products').select('*').eq('is_active',true).order('name'),db.from('customers').select('*').eq('is_active',true).order('name')]);if(pr.error||cu.error){summary.textContent=(pr.error||cu.error).message;return}products=pr.data||[];customers=cu.data||[];productList.innerHTML=products.map(p=>`<div class="item">${esc(p.name)} — <b>${p.stock_koli} koli</b></div>`).join('')||'Henüz ürün yok.';customerList.innerHTML=customers.map(c=>`<div class="item">${esc(c.name)} — Bakiye: ${c.balance||0}</div>`).join('')||'Henüz müşteri yok.';stockProduct.innerHTML=saleProduct.innerHTML=products.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');saleCustomer.innerHTML='<option value="">Peşin / müşterisiz</option>'+customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');summary.textContent=`Aktif ürün: ${products.length} • Müşteri: ${customers.length}`}
+async function loadApp(){
+
+  let {data:u}=await db.auth.getUser();
+
+  if(!u.user)return;
+
+  let {data:p,error}=await db
+
+    .from('profiles')
+
+    .select('role,is_active,full_name')
+
+    .eq('id',u.user.id)
+
+    .single();
+
+  if(error||!p||!p.is_active){
+
+    msg('Hesabınız aktif değil veya profil bulunamadı.');
+
+    return;
+
+  }
+
+  profile=p;
+
+  login.classList.add('hidden');
+
+  app.classList.remove('hidden');
+
+  await refresh();
+
+  if(profile.role==='admin'){
+
+    document.getElementById('pendingUsers').classList.remove('hidden');
+
+    await loadPendingUsers();
+
+  }
+
+}
+async function loadPendingUsers(){
+
+  if(profile.role !== 'admin') return;
+
+  const {data,error} = await db
+
+    .from('profiles')
+
+    .select('id,full_name,role,is_active')
+
+    .eq('is_active',false);
+
+  if(error) return alert(error.message);
+
+  const area = document.getElementById('pendingUsers');
+
+  if(!area) return;
+
+  area.innerHTML = '<h3>Onay bekleyen personeller</h3>';
+
+  (data || []).forEach(user => {
+
+    area.innerHTML += `
+
+      <p>${user.full_name || 'İsimsiz personel'}
+
+      <button onclick="approveUser('${user.id}')">Onayla</button></p>
+
+    `;
+
+  });
+
+}
+
+async function approveUser(id){
+
+  if(!confirm('Bu personelin hesabını onaylamak istiyor musunuz?')) return;
+
+  const {error} = await db
+
+    .from('profiles')
+
+    .update({is_active:true})
+
+    .eq('id',id);
+
+  if(error) return alert(error.message);
+
+  alert('Personel hesabı onaylandı.');
+
+  await loadPendingUsers();
+
+}
+ async function refresh(){let [pr,cu]=await Promise.all([db.from('products').select('*').eq('is_active',true).order('name'),db.from('customers').select('*').eq('is_active',true).order('name')]);if(pr.error||cu.error){summary.textContent=(pr.error||cu.error).message;return}products=pr.data||[];customers=cu.data||[];productList.innerHTML=products.map(p=>`<div class="item">${esc(p.name)} — <b>${p.stock_koli} koli</b></div>`).join('')||'Henüz ürün yok.';customerList.innerHTML=customers.map(c=>`<div class="item">${esc(c.name)} — Bakiye: ${c.balance||0}</div>`).join('')||'Henüz müşteri yok.';stockProduct.innerHTML=saleProduct.innerHTML=products.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');saleCustomer.innerHTML='<option value="">Peşin / müşterisiz</option>'+customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');summary.textContent=`Aktif ürün: ${products.length} • Müşteri: ${customers.length}`}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function applySettings(){
 
