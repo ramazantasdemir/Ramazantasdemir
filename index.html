@@ -111,6 +111,17 @@ async function makeSale(){let q=Number(saleQty.value),price=Number(salePrice.val
 async function sendResetEmail(){if(!db)return msg('Bağlantı hazır değil.');if(!email.value.trim())return msg('Önce e-posta adresinizi yazın.');let {error}=await db.auth.resetPasswordForEmail(email.value.trim(),{redirectTo:location.origin+location.pathname});msg(error?error.message:'Şifre yenileme bağlantısı e-posta adresinize gönderildi.');}
   async function signOut(){await db.auth.signOut();app.classList.add('hidden');login.classList.remove('hidden')}
 alert("JAVASCRIPT ÇALIŞIYOR");
-init();
+db.auth.onAuthStateChange((event, session)=>{
+
+  if(event==='PASSWORD_RECOVERY'){
+
+    document.getElementById('resetBox').classList.remove('hidden');
+
+    msg('Yeni şifrenizi belirleyin.');
+
+  }
+
+});
+ init();
 </script>
 </body></html>
