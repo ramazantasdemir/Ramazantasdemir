@@ -26,6 +26,15 @@ nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}nav button{width:auto;fl
 <label>E-posta</label><input id="email" type="email" autocomplete="username" placeholder="E-posta adresiniz">
 <label>Şifre</label><input id="password" type="password" autocomplete="current-password" placeholder="Şifreniz">
 <button onclick="sendResetEmail()">Şifremi unuttum</button>
+ <div id="resetBox" class="hidden">
+
+  <label>Yeni şifre</label>
+
+  <input id="newPassword" type="password" placeholder="Yeni şifreniz">
+
+  <button onclick="saveNewPassword()">Şifreyi kaydet</button>
+
+</div>
   <button onclick="signIn()">Giriş yap</button>
 <p class="small">Bu ilk sürüm Supabase projenize bağlanacak şekilde hazırlanmıştır. Giriş yapabilmek için Supabase Auth içinde kullanıcı hesabı oluşturulmuş olmalıdır.</p>
 <div id="loginMsg" class="status">Bağlantı anahtarı henüz eklenmedi.</div>
