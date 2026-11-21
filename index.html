@@ -51,7 +51,9 @@ nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}nav button{width:auto;fl
 
 <button onclick="show('sales')">Satış</button>
 
-<button onclick="show('settings')">⚙️ Ayarlar</button>
+ <button onclick="show('purchases')">Alış</button>
+
+ <button onclick="show('settings')">⚙️ Ayarlar</button>
 
 </nav>
 <div id="pendingUsers" class="card hidden"></div>
@@ -59,6 +61,33 @@ nav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}nav button{width:auto;fl
 <div id="products" class="card hidden"><h2>Ürünler ve stok</h2><div id="productList"></div><label>Yeni ürün adı</label><input id="newProduct" placeholder="Ürün adı"><button onclick="addProduct()">Ürün ekle (yönetici)</button><label>Stok eklenecek ürün</label><select id="stockProduct"></select><label>Eklenen koli</label><input id="stockQty" type="number" min="0.01" step="0.01"><button onclick="addStock()">Stok ekle (yönetici)</button></div>
 <div id="customers" class="card hidden"><h2>Müşteriler</h2><div id="customerList"></div><label>Müşteri adı</label><input id="newCustomer" placeholder="Müşteri adı"><label>Telefon</label><input id="newPhone" placeholder="Telefon (isteğe bağlı)"><button onclick="addCustomer()">Müşteri ekle</button></div>
 <div id="sales" class="card hidden"><h2>Satış</h2><label>Müşteri (boş bırakılırsa peşin satış)</label><select id="saleCustomer"><option value="">Peşin / müşterisiz</option></select><label>Ürün</label><select id="saleProduct"></select><label>Miktar (koli)</label><input id="saleQty" type="number" min="0.01" step="0.01"><label>Birim fiyat</label><input id="salePrice" type="number" min="0" step="0.01"><label>Not</label><input id="saleNote" placeholder="İsteğe bağlı"><button onclick="makeSale()">Satışı kaydet</button></div>
+<div id="purchases" class="card hidden">
+
+  <h2>Ürün Alışı</h2>
+
+  <label>Tedarikçi adı</label>
+
+  <input id="purchaseSupplier" placeholder="Tedarikçi adı">
+
+  <label>Ürün</label>
+
+  <select id="purchaseProduct"></select>
+
+  <label>Miktar (koli)</label>
+
+  <input id="purchaseQty" type="number" min="0.01" step="0.01">
+
+  <label>Birim alış fiyatı</label>
+
+  <input id="purchasePrice" type="number" min="0" step="0.01">
+
+  <label>Not</label>
+
+  <input id="purchaseNote" placeholder="İsteğe bağlı">
+
+  <button onclick="makePurchase()">Alışı kaydet</button>
+
+</div>
  <div class="card"><button onclick="signOut()">Çıkış yap</button></div>
 </section>
 <div id="settings" class="card hidden">
@@ -337,7 +366,59 @@ async function approveUser(id){
   await loadPendingUsers();
 
 }
- async function refresh(){let [pr,cu]=await Promise.all([db.from('products').select('*').eq('is_active',true).order('name'),db.from('customers').select('*').eq('is_active',true).order('name')]);if(pr.error||cu.error){summary.textContent=(pr.error||cu.error).message;return}products=pr.data||[];customers=cu.data||[];productList.innerHTML=products.map(p=>`<div class="item">${esc(p.name)} — <b>${p.stock_koli} koli</b></div>`).join('')||'Henüz ürün yok.';customerList.innerHTML=customers.map(c=>`<div class="item">${esc(c.name)} — Bakiye: ${c.balance||0}</div>`).join('')||'Henüz müşteri yok.';stockProduct.innerHTML=saleProduct.innerHTML=products.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');saleCustomer.innerHTML='<option value="">Peşin / müşterisiz</option>'+customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');summary.textContent=`Aktif ürün: ${products.length} • Müşteri: ${customers.length}`}
+ async function refresh(){
+
+  let [pr,cu]=await Promise.all([
+
+    db.from('products').select('*').eq('is_active',true).order('name'),
+
+    db.from('customers').select('*').eq('is_active',true).order('name')
+
+  ]);
+
+  if(pr.error||cu.error){
+
+    summary.textContent=(pr.error||cu.error).message;
+
+    return;
+
+  }
+
+  products=pr.data||[];
+
+  customers=cu.data||[];
+
+  productList.innerHTML=products.map(p=>
+
+    `<div class="item">${esc(p.name)} — <b>${p.stock_koli} koli</b></div>`
+
+  ).join('')||'Henüz ürün yok.';
+
+  customerList.innerHTML=customers.map(c=>
+
+    `<div class="item">${esc(c.name)} — Bakiye: ${c.balance||0}</div>`
+
+  ).join('')||'Henüz müşteri yok.';
+
+  const productOptions=products.map(p=>
+
+    `<option value="${p.id}">${esc(p.name)}</option>`
+
+  ).join('');
+
+  stockProduct.innerHTML=productOptions;
+
+  saleProduct.innerHTML=productOptions;
+
+  document.getElementById('purchaseProduct').innerHTML=productOptions;
+
+  saleCustomer.innerHTML='<option value="">Peşin / müşterisiz</option>'+
+
+    customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+
+  summary.textContent=`Aktif ürün: ${products.length} • Müşteri: ${customers.length}`;
+
+}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function applySettings(){
 
@@ -476,7 +557,44 @@ async function addStock(){
 async function addStock(){if(profile.role!=='admin')return alert('Yalnızca yönetici stok ekleyebilir.');await rpc('add_stock',{p_product_id:stockProduct.value,p_quantity:Number(stockQty.value),p_note:null})}
 async function addCustomer(){if(newCustomer.value.trim())await rpc('add_customer',{p_name:newCustomer.value.trim(),p_phone:newPhone.value||null,p_address:null})}
 async function makeSale(){let q=Number(saleQty.value),price=Number(salePrice.value);if(!saleProduct.value||q<=0||price<0)return alert('Ürün, miktar ve fiyatı kontrol edin.');await rpc('create_sale',{p_customer_id:saleCustomer.value||null,p_note:saleNote.value||null,p_items:[{product_id:saleProduct.value,quantity_koli:q,unit_price:price}]})}
-async function sendResetEmail(){if(!db)return msg('Bağlantı hazır değil.');if(!email.value.trim())return msg('Önce e-posta adresinizi yazın.');let {error}=await db.auth.resetPasswordForEmail(email.value.trim(),{redirectTo:location.origin+location.pathname});msg(error?error.message:'Şifre yenileme bağlantısı e-posta adresinize gönderildi.');}
+async function makePurchase(){
+
+  const supplier = document.getElementById('purchaseSupplier').value.trim();
+
+  const product = document.getElementById('purchaseProduct').value;
+
+  const qty = Number(document.getElementById('purchaseQty').value);
+
+  const price = Number(document.getElementById('purchasePrice').value);
+
+  const note = document.getElementById('purchaseNote').value.trim();
+
+  if(!supplier || !product || qty <= 0 || price < 0){
+
+    return alert('Tedarikçi, ürün, miktar ve fiyatı kontrol edin.');
+
+  }
+
+  await rpc('create_purchase',{
+
+    p_supplier_name: supplier,
+
+    p_note: note || null,
+
+    p_items: [{
+
+      product_id: product,
+
+      quantity_koli: qty,
+
+      unit_price: price
+
+    }]
+
+  });
+
+}
+ async function sendResetEmail(){if(!db)return msg('Bağlantı hazır değil.');if(!email.value.trim())return msg('Önce e-posta adresinizi yazın.');let {error}=await db.auth.resetPasswordForEmail(email.value.trim(),{redirectTo:location.origin+location.pathname});msg(error?error.message:'Şifre yenileme bağlantısı e-posta adresinize gönderildi.');}
   async function signOut(){await db.auth.signOut();app.classList.add('hidden');login.classList.remove('hidden')}
 loadSettings();
 init();
